@@ -8,16 +8,11 @@
 #include <sys/wait.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
+#include "term.h"
 
 int input_function (const char *text, void *data, char **output);
 
-void quit(){
-    Console_Destroy(tty);
-    SDL_GL_DeleteContext(glContext);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-    return 0;
-}
+int quit();
 
 int main (int argc, char **argv)
 {
@@ -77,7 +72,7 @@ int main (int argc, char **argv)
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
             case SDL_QUIT:
-                goto quit;
+                return 0;
                 break;
             }
         }
@@ -88,11 +83,15 @@ int main (int argc, char **argv)
         if (Console_Draw(tty)) { /* handle drawing the console if toggled */
             fprintf(stderr, "%s\n", Console_GetError());
             /* handle fatal console error */
-            quit();
+            Console_Destroy(tty);
+	    SDL_GL_DeleteContext(glContext);
+	    SDL_DestroyWindow(window);
+	    SDL_Quit();
+	    return 0;
         }
 
         SDL_GL_SwapWindow(window);
     }
 
+} //main()
 
-}
