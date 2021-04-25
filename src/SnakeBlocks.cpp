@@ -2,7 +2,7 @@
 
 template<typename T>
 terminal::SnakeBlocks<T>::SnakeBlocks(std::size_t block_size, std::size_t initial_blocks):
-    block_size(block_size), state(0)
+    block_size(block_size), tail(0), state(0)
 {
     segments[0].head = 0;
     segments[0].tail = 0;
@@ -60,7 +60,8 @@ void terminal::SnakeBlocks<T>::advance_tail() {
         return;
     }
 
-    // advance the tail of the oldest segment
+    // advance the tail of the oldest segment and the reference point
+    tail++;
     segments[0].tail++;
 
     // if the segment has been collapsed

@@ -30,6 +30,7 @@ public:
     };
 
 private:
+    std::size_t tail;  // reference point, snake only moves forward!
     std::size_t block_size;
     std::vector<T*> blocks;
 
