@@ -1,10 +1,12 @@
 #include <cstdio>
+#include <iostream>
 #include <errno.h>
 #include <cstdlib>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 
 
 int main(){
@@ -57,7 +59,12 @@ int main(){
 
         close(slave);
 
-        return 6;
+        if(execl("/bin/bash", "/bin/bash", nullptr) ==-1){
+            return 6;
+        }
+
     }
     close(slave);
+    waitpid(pid, nullptr, 0);
+    std::cout<<"End"<<std::endl;
 } //main()
