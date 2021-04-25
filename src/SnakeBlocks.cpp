@@ -89,12 +89,32 @@ void terminal::SnakeBlocks<T>::advance_tail() {
     }
 }
 
+template<typename T>
+T* terminal::SnakeBlocks<T>::operator[](std::size_t index) {
+    index -= tail;
+
+    if (index >= 0) {
+        short num_seg = num_segments();
+
+        for (short i = 0; i < num_seg; i++) {
+            auto seg_size = segments[i].head - segments[i].tail;
+            if (index < seg_size) {
+                return blocks[segments[i].tail + index];
+            } else {
+                index -= seg_size;
+            }
+        }
+    }
+
+    throw std::out_of_range("SnakeBlocks::operator[]: block index");
+}
+
 template class terminal::SnakeBlocks<char>;
 
 #ifdef SNAKE_BLOCKS_TEST_MAIN
     void print_snake_blocks(terminal::SnakeBlocks<char>& sb) {
-        short num_segments = sb.state == 3 ? 2 : sb.state + 1;
-        std::cout << "SnakeBlocks (" << sb.state << ") [";
+        short num_segments = sb.num_segments();
+        std::cout << "tail: " << sb.tail << " state: " << sb.state << " blocks: [";
         for (std::size_t i = 0; i < sb.blocks.size(); i++) {
             char segment = '.';
             for (short s = 0; s < num_segments; s++) {
