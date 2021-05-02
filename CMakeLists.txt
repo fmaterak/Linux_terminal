@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.11) # FetchContent is available in 3.11+
 project(terminal)
 
-set(CMAKE_BUILD_TYPE RELEASE)
+set(CMAKE_BUILD_TYPE DEBUG)
 set(CMAKE_CXX_STANDARD 11)
 
 find_package(raylib 3.0 QUIET)
@@ -34,5 +34,5 @@ endif()
 include_directories("inc")
 file(GLOB Sources terminal-main.cpp src/*.cpp src/*/*.cpp src/*/*/*.cpp)
 add_executable(${CMAKE_PROJECT_NAME} ${Sources})
-target_compile_definitions(${PROJECT_NAME} PRIVATE SNAKE_BLOCKS_TEST_MAIN)
+# target_compile_definitions(${PROJECT_NAME} PRIVATE SNAKE_BLOCKS_TEST_MAIN)
 target_link_libraries(${PROJECT_NAME} raylib)

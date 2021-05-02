@@ -6,10 +6,29 @@ namespace rl {
 	}
 }
 
-#include "SnakeBlocks.hpp"
+#include "Snake.hpp"
 
 #ifndef SNAKE_BLOCKS_TEST_MAIN
 int main() {
+    terminal::Snake<char> snake;
+    snake.read_from_string("hello, world!");
+    std::cout << "Snake spans from " << snake.tail_pos() << " to " << snake.head_pos() << '\n';
+    std::cout << "Snake contents: ";
+    for (char c: snake) {
+        std::cout << c;
+    }
+    std::cout << '\n';
+    std::cout << "Advancing by 7\n";
+    snake.advance_tail(7);
+    std::cout << "Snake spans from " << snake.tail_pos() << " to " << snake.head_pos() << '\n';
+    std::cout << "Snake contents: ";
+    for (char c: snake) {
+        std::cout << c;
+    }
+    std::cout << '\n';
+}
+
+int rlmain() {
     const int screenWidth = 640;
     const int screenHeight = 480;
 

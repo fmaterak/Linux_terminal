@@ -43,11 +43,11 @@ private:
 
     void advance_seg_head_edge(Segment& segment);
 
-    void advance_head();
-    void advance_tail();
-
 public:
     SnakeBlocks(std::size_t block_size, std::size_t initial_blocks = 0);
+
+    void advance_head();
+    void advance_tail();
 
     T* operator[](std::size_t index);
 
