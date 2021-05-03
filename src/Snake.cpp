@@ -1,63 +1,58 @@
 #include "Snake.hpp"
 
 template<typename T>
-terminal::Snake<T>::SnakeIterator::SnakeIterator(terminal::Snake<T>& snake, std::size_t pos): snake(snake) {
-    auto d = std::div(pos, BLOCK_SIZE);
-    block_idx = d.quot;
-    elem_idx = d.rem;
-    try {
-        block = snake.blocks[block_idx];
-    }
-    catch (std::out_of_range) {
-        block = nullptr;
+terminal::Snake<T>::Iterator::Iterator(Snake<T>& parent, typename SnakeBlocks<T>::Iterator blocks_iter, std::size_t elem_idx):
+    parent(parent), blocks_iter(blocks_iter), elem_idx(elem_idx)
+{
+    while (this->elem_idx >= BLOCK_SIZE) {
+        this->elem_idx -= BLOCK_SIZE;
+        this->blocks_iter++;
     }
 }
 
 template<typename T>
-typename terminal::Snake<T>::SnakeIterator terminal::Snake<T>::SnakeIterator::operator+(std::size_t offset) const {
-    return SnakeIterator(snake, block_idx * BLOCK_SIZE + elem_idx + offset);
+terminal::Snake<T>::Iterator::Iterator(Snake<T>& parent, std::size_t pos):
+    parent(parent), blocks_iter(parent.blocks.iter(pos / BLOCK_SIZE)), elem_idx(pos % BLOCK_SIZE) { }
+
+template<typename T>
+typename terminal::Snake<T>::Iterator terminal::Snake<T>::Iterator::operator+(std::size_t offset) const {
+    return Iterator(parent, blocks_iter, elem_idx + offset);
 }
 
 template<typename T>
-typename terminal::Snake<T>::SnakeIterator& terminal::Snake<T>::SnakeIterator::operator++() {
+typename terminal::Snake<T>::Iterator& terminal::Snake<T>::Iterator::operator++() {
     increment();
     return *this;
 }
 
 template<typename T>
-typename terminal::Snake<T>::SnakeIterator terminal::Snake<T>::SnakeIterator::operator++(int) {
+typename terminal::Snake<T>::Iterator terminal::Snake<T>::Iterator::operator++(int) {
     auto tmp = *this;
     increment();
     return tmp;
 }
 
 template<typename T>
-T& terminal::Snake<T>::SnakeIterator::operator*() {
-    return block[elem_idx];
+T& terminal::Snake<T>::Iterator::operator*() {
+    return (*blocks_iter)[elem_idx];
 }
 
 template<typename T>
-const T& terminal::Snake<T>::SnakeIterator::operator*() const {
-    return block[elem_idx];
+bool terminal::Snake<T>::Iterator::operator==(const terminal::Snake<T>::Iterator& other) const {
+    return blocks_iter == other.blocks_iter && elem_idx == other.elem_idx;
 }
 
 template<typename T>
-bool terminal::Snake<T>::SnakeIterator::operator==(const terminal::Snake<T>::SnakeIterator& other) const {
-    return block_idx == other.block_idx && elem_idx == other.elem_idx;
-}
-
-template<typename T>
-bool terminal::Snake<T>::SnakeIterator::operator!=(const terminal::Snake<T>::SnakeIterator& other) const {
+bool terminal::Snake<T>::Iterator::operator!=(const terminal::Snake<T>::Iterator& other) const {
     return !(*this == other);
 }
 
 template<typename T>
-void terminal::Snake<T>::SnakeIterator::increment() {
+void terminal::Snake<T>::Iterator::increment() {
     elem_idx++;
     if (elem_idx == BLOCK_SIZE) {
         elem_idx = 0;
-        block_idx++;
-        block = snake.blocks[block_idx];
+        blocks_iter++;
     }
 }
 
@@ -120,4 +115,11 @@ void terminal::Snake<char>::read_from_string(std::string s) {
     }
 }
 
+template<typename T>
+void terminal::Snake<T>::push(T value) {
+    advance_head(1);
+    (*this)[head-1] = value;
+}
+
 template class terminal::Snake<char>;
+template class terminal::Snake<int>;

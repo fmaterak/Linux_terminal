@@ -1,6 +1,61 @@
 #include "SnakeBlocks.hpp"
 
 template<typename T>
+terminal::SnakeBlocks<T>::Iterator::Iterator(SnakeBlocks<T>& parent, std::size_t block_idx):
+    parent(parent), block_idx(block_idx) { update_block_ptr(); }
+
+template<typename T>
+typename terminal::SnakeBlocks<T>::Iterator terminal::SnakeBlocks<T>::Iterator::operator+(std::size_t offset) const {
+    return Iterator(parent, block_idx + offset);
+}
+
+template<typename T>
+typename terminal::SnakeBlocks<T>::Iterator& terminal::SnakeBlocks<T>::Iterator::operator++() {
+    increment();
+    return *this;
+}
+
+template<typename T>
+typename terminal::SnakeBlocks<T>::Iterator terminal::SnakeBlocks<T>::Iterator::operator++(int) {
+    auto tmp = *this;
+    increment();
+    return tmp;
+}
+
+template<typename T>
+void terminal::SnakeBlocks<T>::Iterator::increment() {
+    block_idx++;
+    update_block_ptr();
+}
+
+template<typename T>
+void terminal::SnakeBlocks<T>::Iterator::update_block_ptr() {
+    try {
+        block = parent[block_idx];
+    }
+    catch (std::out_of_range) {
+        block = nullptr;
+    }
+}
+
+template<typename T>
+T* terminal::SnakeBlocks<T>::Iterator::operator*() {
+    return block;
+}
+
+template<typename T>
+bool terminal::SnakeBlocks<T>::Iterator::operator==(const Iterator& other) const {
+    return block_idx == other.block_idx;
+}
+
+template<typename T>
+bool terminal::SnakeBlocks<T>::Iterator::operator!=(const Iterator& other) const {
+    return !(*this == other);
+}
+
+
+
+template<typename T>
 terminal::SnakeBlocks<T>::SnakeBlocks(std::size_t block_size, std::size_t initial_blocks):
     block_size(block_size), tail(0), state(0)
 {
@@ -110,6 +165,7 @@ T* terminal::SnakeBlocks<T>::operator[](std::size_t index) {
 }
 
 template class terminal::SnakeBlocks<char>;
+template class terminal::SnakeBlocks<int>;
 
 #ifdef SNAKE_BLOCKS_TEST_MAIN
     void print_snake_blocks(terminal::SnakeBlocks<char>& sb) {
