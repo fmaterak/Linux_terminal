@@ -12,11 +12,11 @@ void terminal::LineBuffer::LineRange::reset_cache() {
 }
 
 void terminal::LineBuffer::LineRange::new_lines_inserted(std::size_t after_pos) {
-    if (cached_end_pos > after_pos) {
+    if (cached_end_pos >= after_pos) {
         cached_end = std::prev(parent.lines.end());
         cached_end_pos = parent.lines.size() - 1;
     }
-    if (cached_begin_pos > after_pos) {
+    if (cached_begin_pos >= after_pos) {
         // begin is always before end, so if begin is after pos, end is after pos too
         // tl;dr: this will use values from if block above
         cached_begin = cached_end;
@@ -102,8 +102,10 @@ void terminal::LineBuffer::LineRange::move(std::size_t begin_pos, std::size_t en
 }
 
 
-terminal::LineBuffer::LineBuffer(int width):
-    lines({{codepoints.end(), true}, {codepoints.end(), true}}), line_range(*this), width(width) { }
+terminal::LineBuffer::LineBuffer(std::size_t max_lines, int width):
+    first_line(0), max_lines(max_lines), width(width),
+    // add real line beginning and a dummy line (which acts like an end iterator)
+    lines({{codepoints.end(), true}, {codepoints.end(), true}}), line_range(*this) { }
 
 const terminal::LineBuffer::LineRange& terminal::LineBuffer::range(std::size_t begin_pos, std::size_t end_pos) {
     line_range.move(begin_pos, end_pos);
@@ -112,30 +114,58 @@ const terminal::LineBuffer::LineRange& terminal::LineBuffer::range(std::size_t b
 
 void terminal::LineBuffer::read_from(std::istream& stream, std::size_t count) {
     // TODO: advance head by count?
-    char c;
-    int width_counter;
+    // TODO: implement advancing tail after exceeding max_lines
+    int c;
     std::size_t last_line_pos_before_insertion = lines.size() - 2;
     auto dummy_line = std::prev(lines.end());
-    // if (lines.size() <= 1) {  // are there any real lines? (not dummy one)
-        // width_counter = 0;
-    // } else {
-        width_counter = codepoints.head_pos() - std::prev(dummy_line)->first_codepoint().pos();
-    // }
+    int width_counter = codepoints.head_pos() - std::prev(dummy_line)->first_codepoint().pos();
 
     while (count--) {
         c = stream.get();
-        if (c == '\n') {
+        if (c == EOF) {
+            break;
+        }
+        else if (c == '\n') {
             width_counter = 0;
             lines.emplace(dummy_line, codepoints.end(), true);
         } else {
-            codepoints.push(c);
-            if (++width_counter == width) {
+            if (width_counter == width) {
                 width_counter = 0;
                 lines.emplace(dummy_line, codepoints.end(), false);
             }
+            codepoints.push(c);
+            width_counter++;
         }
     }
 
     dummy_line->first = codepoints.end();
     line_range.new_lines_inserted(last_line_pos_before_insertion);
+}
+
+void terminal::LineBuffer::set_line_width(int new_width) {
+    width = new_width;
+
+    auto phys_line = lines.begin();
+    auto end = std::prev(lines.end());  // don't erase dummy line
+
+    while (phys_line != end) {
+        // find the next physical line and erase soft lines in between
+        auto after_phys_line = std::next(phys_line);
+        auto next_phys_line = std::find_if(after_phys_line, end, [](Line& l){ return l.is_hard_wrapped(); });
+        lines.erase(after_phys_line, next_phys_line);
+
+        // add new soft lines
+        std::size_t first_pos = phys_line->first.pos();
+        std::size_t line_width = next_phys_line->first.pos() - first_pos;
+        std::size_t soft_wrap_col = 0;
+        while (line_width - soft_wrap_col > width) {
+            soft_wrap_col += width;
+            lines.emplace(next_phys_line, codepoints.iter(first_pos + soft_wrap_col), false);
+        }
+
+        // move iterator
+        phys_line = next_phys_line;
+    }
+
+    line_range.reset_cache();
 }
