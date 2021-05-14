@@ -1,12 +1,20 @@
 #include "SnakeBlocks.hpp"
 
 template<typename T>
-terminal::SnakeBlocks<T>::Iterator::Iterator(SnakeBlocks<T>& parent, std::size_t block_idx):
-    parent(parent), block_idx(block_idx) { update_block_ptr(); }
+terminal::SnakeBlocks<T>::Iterator::Iterator(SnakeBlocks<T>& owner, std::size_t block_idx):
+    owner(&owner), block_idx(block_idx)
+{
+    try {
+        resolve();
+    }
+    catch (std::out_of_range) {
+        block = nullptr;
+    }
+}
 
 template<typename T>
 typename terminal::SnakeBlocks<T>::Iterator terminal::SnakeBlocks<T>::Iterator::operator+(std::size_t offset) const {
-    return Iterator(parent, block_idx + offset);
+    return Iterator(*owner, block_idx + offset);
 }
 
 template<typename T>
@@ -25,17 +33,18 @@ typename terminal::SnakeBlocks<T>::Iterator terminal::SnakeBlocks<T>::Iterator::
 template<typename T>
 void terminal::SnakeBlocks<T>::Iterator::increment() {
     block_idx++;
-    update_block_ptr();
-}
-
-template<typename T>
-void terminal::SnakeBlocks<T>::Iterator::update_block_ptr() {
     try {
-        block = parent[block_idx];
+        resolve();
     }
     catch (std::out_of_range) {
         block = nullptr;
     }
+}
+
+template<typename T>
+typename terminal::SnakeBlocks<T>::Iterator& terminal::SnakeBlocks<T>::Iterator::resolve() {
+    block = (*owner)[block_idx];
+    return *this;
 }
 
 template<typename T>

@@ -1,8 +1,8 @@
 #include "Snake.hpp"
 
 template<typename T>
-terminal::Snake<T>::Iterator::Iterator(Snake<T>& parent, typename SnakeBlocks<T>::Iterator blocks_iter, std::size_t elem_idx):
-    parent(parent), blocks_iter(blocks_iter), elem_idx(elem_idx)
+terminal::Snake<T>::Iterator::Iterator(Snake<T>& owner, typename SnakeBlocks<T>::Iterator blocks_iter, std::size_t elem_idx):
+    owner(&owner), blocks_iter(blocks_iter), elem_idx(elem_idx)
 {
     while (this->elem_idx >= BLOCK_SIZE) {
         this->elem_idx -= BLOCK_SIZE;
@@ -11,13 +11,13 @@ terminal::Snake<T>::Iterator::Iterator(Snake<T>& parent, typename SnakeBlocks<T>
 }
 
 template<typename T>
-terminal::Snake<T>::Iterator::Iterator(Snake<T>& parent, std::size_t pos):
-    parent(parent), blocks_iter(parent.blocks.iter(pos / BLOCK_SIZE)), elem_idx(pos % BLOCK_SIZE) { }
+terminal::Snake<T>::Iterator::Iterator(Snake<T>& owner, std::size_t pos):
+    owner(&owner), blocks_iter(owner.blocks.iter(pos / BLOCK_SIZE)), elem_idx(pos % BLOCK_SIZE) { }
 
-template<typename T>
-typename terminal::Snake<T>::Iterator terminal::Snake<T>::Iterator::operator+(std::size_t offset) const {
-    return Iterator(parent, blocks_iter, elem_idx + offset);
-}
+// template<typename T>
+// typename terminal::Snake<T>::Iterator terminal::Snake<T>::Iterator::operator+(std::size_t offset) const {
+//     return Iterator(*owner, blocks_iter, elem_idx + offset);
+// }
 
 template<typename T>
 typename terminal::Snake<T>::Iterator& terminal::Snake<T>::Iterator::operator++() {
@@ -48,12 +48,23 @@ bool terminal::Snake<T>::Iterator::operator!=(const terminal::Snake<T>::Iterator
 }
 
 template<typename T>
+std::size_t terminal::Snake<T>::Iterator::pos() const {
+    return blocks_iter.pos() * BLOCK_SIZE + elem_idx;
+}
+
+template<typename T>
 void terminal::Snake<T>::Iterator::increment() {
     elem_idx++;
     if (elem_idx == BLOCK_SIZE) {
         elem_idx = 0;
         blocks_iter++;
     }
+}
+
+template<typename T>
+typename terminal::Snake<T>::Iterator& terminal::Snake<T>::Iterator::resolve() {
+    blocks_iter.resolve();
+    return *this;
 }
 
 
@@ -82,6 +93,11 @@ void terminal::Snake<T>::advance_head(std::size_t offset) {
 }
 
 template<typename T>
+void terminal::Snake<T>::discard_head(std::size_t offset) {
+    head -= offset;  // TODO: wrong, block may be allocated multiple times
+}
+
+template<typename T>
 void terminal::Snake<T>::advance_tail(std::size_t offset) {
     std::size_t prev_tail_block_idx = tail / BLOCK_SIZE;
     tail += offset;
@@ -105,8 +121,7 @@ T& terminal::Snake<T>::operator[](std::size_t index) {
 
 template<>
 void terminal::Snake<char>::read_from_string(std::string s) {
-    advance_head(s.size());
-    auto mem_begin = end(-s.size());
+    auto mem_begin = make_writing_region(s.size());
     auto mem_end = end();
     auto s_begin = s.cbegin();
     auto s_end = s.cend();

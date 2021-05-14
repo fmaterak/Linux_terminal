@@ -25,15 +25,14 @@ template <typename T>
 class SnakeBlocks {
 public:
     class Iterator {
-        SnakeBlocks<T>& parent;
+        SnakeBlocks<T>* owner;
         T* block;
         std::size_t block_idx;
 
         void increment();
-        void update_block_ptr();
 
     public:
-        Iterator(SnakeBlocks<T>& parent, std::size_t block_idx);
+        Iterator(SnakeBlocks<T>& owner, std::size_t block_idx);
 
         Iterator operator+(std::size_t offset) const;
         Iterator& operator++();
@@ -43,6 +42,9 @@ public:
 
         bool operator==(const Iterator& other) const;
         bool operator!=(const Iterator& other) const;
+
+        Iterator& resolve();
+        inline std::size_t pos() const { return block_idx; }
     };
 
 private:

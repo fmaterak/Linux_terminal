@@ -8,20 +8,21 @@ namespace terminal {
 
 template <typename T>
 class Snake {
+public:
     class Iterator {
-        Snake<T>& parent;
+        Snake<T>* owner;  // TODO: may be removed
         typename SnakeBlocks<T>::Iterator blocks_iter;
         std::size_t elem_idx;
 
-        Iterator(Snake<T>& parent, typename SnakeBlocks<T>::Iterator blocks_iter, std::size_t elem_idx);
+        Iterator(Snake<T>& owner, typename SnakeBlocks<T>::Iterator blocks_iter, std::size_t elem_idx);
 
         void increment();
 
     public:
-        Iterator(Snake<T>& parent, std::size_t pos);
+        Iterator(Snake<T>& owner, std::size_t pos);
         Iterator& operator=(const Iterator&) = default;
 
-        Iterator operator+(std::size_t offset) const;
+        // Iterator operator+(std::size_t offset) const;
         Iterator& operator++();
         Iterator operator++(int);
 
@@ -29,8 +30,12 @@ class Snake {
 
         bool operator==(const Iterator& other) const;
         bool operator!=(const Iterator& other) const;
+
+        Iterator& resolve();
+        std::size_t pos() const;
     };
 
+private:
     static constexpr int BLOCK_SIZE = 4;
     SnakeBlocks<T> blocks;
     std::size_t head, tail;
@@ -49,7 +54,13 @@ public:
     inline Iterator end(std::size_t offset) { return iter(head + offset); }
 
     void advance_head(std::size_t offset);
+    void discard_head(std::size_t offset);
     void advance_tail(std::size_t offset);
+
+    inline Iterator make_writing_region(std::size_t size) {
+        advance_head(size);
+        return end(-size);
+    }
 
     T& operator[](std::size_t index);
 
