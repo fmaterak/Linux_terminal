@@ -10,19 +10,15 @@ template <typename T>
 class Snake {
 public:
     class Iterator {
-        Snake<T>* owner;  // TODO: may be removed
         typename SnakeBlocks<T>::Iterator blocks_iter;
         std::size_t elem_idx;
-
-        Iterator(Snake<T>& owner, typename SnakeBlocks<T>::Iterator blocks_iter, std::size_t elem_idx);
 
         void increment();
 
     public:
-        Iterator(Snake<T>& owner, std::size_t pos);
+        Iterator(SnakeBlocks<T>& blocks, std::size_t pos);
         Iterator& operator=(const Iterator&) = default;
 
-        // Iterator operator+(std::size_t offset) const;
         Iterator& operator++();
         Iterator operator++(int);
 
@@ -47,7 +43,7 @@ public:
     inline std::size_t tail_pos() { return tail; }
     inline std::size_t size() { return head - tail; }
 
-    inline Iterator iter(std::size_t pos) { return Iterator(*this, pos); }
+    inline Iterator iter(std::size_t pos) { return Iterator(blocks, pos); }
     inline Iterator begin() { return iter(tail); }
     inline Iterator end() { return iter(head); }
     inline Iterator begin(std::size_t offset) { return iter(tail + offset); }

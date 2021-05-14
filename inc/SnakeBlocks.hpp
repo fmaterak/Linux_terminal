@@ -25,16 +25,15 @@ template <typename T>
 class SnakeBlocks {
 public:
     class Iterator {
-        SnakeBlocks<T>* owner;
+        SnakeBlocks<T>* container;
         T* block;
         std::size_t block_idx;
 
         void increment();
 
     public:
-        Iterator(SnakeBlocks<T>& owner, std::size_t block_idx);
+        Iterator(SnakeBlocks<T>& container, std::size_t block_idx);
 
-        Iterator operator+(std::size_t offset) const;
         Iterator& operator++();
         Iterator operator++(int);
 

@@ -1,23 +1,8 @@
 #include "Snake.hpp"
 
 template<typename T>
-terminal::Snake<T>::Iterator::Iterator(Snake<T>& owner, typename SnakeBlocks<T>::Iterator blocks_iter, std::size_t elem_idx):
-    owner(&owner), blocks_iter(blocks_iter), elem_idx(elem_idx)
-{
-    while (this->elem_idx >= BLOCK_SIZE) {
-        this->elem_idx -= BLOCK_SIZE;
-        this->blocks_iter++;
-    }
-}
-
-template<typename T>
-terminal::Snake<T>::Iterator::Iterator(Snake<T>& owner, std::size_t pos):
-    owner(&owner), blocks_iter(owner.blocks.iter(pos / BLOCK_SIZE)), elem_idx(pos % BLOCK_SIZE) { }
-
-// template<typename T>
-// typename terminal::Snake<T>::Iterator terminal::Snake<T>::Iterator::operator+(std::size_t offset) const {
-//     return Iterator(*owner, blocks_iter, elem_idx + offset);
-// }
+terminal::Snake<T>::Iterator::Iterator(SnakeBlocks<T>& blocks, std::size_t pos):
+    blocks_iter(blocks.iter(pos / BLOCK_SIZE)), elem_idx(pos % BLOCK_SIZE) { }
 
 template<typename T>
 typename terminal::Snake<T>::Iterator& terminal::Snake<T>::Iterator::operator++() {

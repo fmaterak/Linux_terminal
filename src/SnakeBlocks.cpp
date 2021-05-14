@@ -1,8 +1,8 @@
 #include "SnakeBlocks.hpp"
 
 template<typename T>
-terminal::SnakeBlocks<T>::Iterator::Iterator(SnakeBlocks<T>& owner, std::size_t block_idx):
-    owner(&owner), block_idx(block_idx)
+terminal::SnakeBlocks<T>::Iterator::Iterator(SnakeBlocks<T>& container, std::size_t block_idx):
+    container(&container), block_idx(block_idx)
 {
     try {
         resolve();
@@ -10,11 +10,6 @@ terminal::SnakeBlocks<T>::Iterator::Iterator(SnakeBlocks<T>& owner, std::size_t 
     catch (std::out_of_range) {
         block = nullptr;
     }
-}
-
-template<typename T>
-typename terminal::SnakeBlocks<T>::Iterator terminal::SnakeBlocks<T>::Iterator::operator+(std::size_t offset) const {
-    return Iterator(*owner, block_idx + offset);
 }
 
 template<typename T>
@@ -43,7 +38,7 @@ void terminal::SnakeBlocks<T>::Iterator::increment() {
 
 template<typename T>
 typename terminal::SnakeBlocks<T>::Iterator& terminal::SnakeBlocks<T>::Iterator::resolve() {
-    block = (*owner)[block_idx];
+    block = (*container)[block_idx];
     return *this;
 }
 
