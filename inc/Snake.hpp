@@ -32,7 +32,7 @@ public:
     };
 
 private:
-    static constexpr int BLOCK_SIZE = 4;
+    static constexpr int BLOCK_SIZE = 1024;
     SnakeBlocks<T> blocks;
     std::size_t head, tail;
 

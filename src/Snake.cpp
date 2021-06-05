@@ -123,3 +123,6 @@ void terminal::Snake<T>::push(T value) {
 
 template class terminal::Snake<char>;
 template class terminal::Snake<int>;
+
+// #include "LineBuffer.hpp"
+// template class terminal::Snake<terminal::LineBuffer::CharAttr>;

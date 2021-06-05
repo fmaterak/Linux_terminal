@@ -171,6 +171,9 @@ T* terminal::SnakeBlocks<T>::operator[](std::size_t index) {
 template class terminal::SnakeBlocks<char>;
 template class terminal::SnakeBlocks<int>;
 
+// #include "LineBuffer.hpp"
+// template class terminal::SnakeBlocks<terminal::LineBuffer::CharAttr>;
+
 #ifdef SNAKE_BLOCKS_TEST_MAIN
     void print_snake_blocks(terminal::SnakeBlocks<char>& sb) {
         short num_segments = sb.num_segments();

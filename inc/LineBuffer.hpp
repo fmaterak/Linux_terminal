@@ -12,39 +12,33 @@ namespace rl {
 }
 
 #include "Snake.hpp"
+#include "Reader.hpp"
 
 namespace terminal {
 
 class LineBuffer {
 public:
-    using codepoint=int;
-
-    enum FontProp: unsigned char {
-        BOLD         = 1 << 0,
-        DIM          = 1 << 1,
-        ITALIC       = 1 << 2,
-        UNDERLINED   = 1 << 3,
-        BLINK        = 1 << 4,
-        INVERTED     = 1 << 5,
-        HIDDEN       = 1 << 6,
-    };
-
-    struct CharAttr {
-        unsigned char bg, fg;
-        FontProp font;
+    struct StyleChange {
+        Style new_style;
+        std::size_t effective_from;
     };
 
     class Line {
-        Snake<codepoint>::Iterator first;
         bool hard_wrapped;
+        Snake<codepoint>::Iterator first;
+        std::list<StyleChange>::iterator style;
 
         friend class LineBuffer;
 
     public:
-        inline Line(Snake<codepoint>::Iterator first_codepoint, bool is_hard_wrapped):
-            first(first_codepoint), hard_wrapped(is_hard_wrapped) { }
+        inline Line(
+            bool is_hard_wrapped,
+            Snake<codepoint>::Iterator first_codepoint,
+            std::list<StyleChange>::iterator style):
+            hard_wrapped(is_hard_wrapped), first(first_codepoint), style(style) { }
         inline bool is_hard_wrapped() const { return hard_wrapped; }
         inline Snake<codepoint>::Iterator first_codepoint() const { return first; }
+        inline std::list<StyleChange>::iterator active_style() const { return style; }
     };
 
     using LineList = std::list<Line>;
@@ -77,10 +71,8 @@ public:
 
 private:
     int width;
-    // Snake<Attr> attributes;
-    // Snake<Attr>::Iterator attributes_iter;
+    std::list<StyleChange> style_changes;
     Snake<codepoint> codepoints;
-    // Snake<int>::Iterator codepoints_iter;
     LineList lines;
     LineRange line_range;
     std::size_t max_lines, first_line;
@@ -93,7 +85,7 @@ public:
 
     const LineRange& range(std::size_t begin_pos, std::size_t end_pos);
 
-    void read_from(std::istream& stream, std::size_t count = -1);
+    void read_from(Reader& reader, std::size_t count = -1);
     void set_line_width(int new_width);
 };
 

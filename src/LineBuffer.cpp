@@ -12,6 +12,7 @@ void terminal::LineBuffer::LineRange::reset_cache() {
 }
 
 void terminal::LineBuffer::LineRange::new_lines_inserted(std::size_t after_pos) {
+    // check if cached iterators are invalidated
     if (cached_end_pos >= after_pos) {
         cached_end = std::prev(parent.lines.end());
         cached_end_pos = parent.lines.size() - 1;
@@ -103,49 +104,66 @@ void terminal::LineBuffer::LineRange::move(std::size_t begin_pos, std::size_t en
 
 
 terminal::LineBuffer::LineBuffer(std::size_t max_lines, int width):
-    first_line(0), max_lines(max_lines), width(width),
-    // add real line beginning and a dummy line (which acts like an end iterator)
-    lines({{codepoints.end(), true}, {codepoints.end(), true}}), line_range(*this) { }
+    first_line(0), max_lines(max_lines), width(width), line_range(*this)
+{
+    // both lists contain a dummy object at the end used to safeley dereference iterator
+    style_changes = std::list<StyleChange>(2, {Style::NONE});
+    // codepoints.begin() and codepoints.end() are the same at this point
+    lines = std::list<Line>(2, {true, codepoints.begin(), style_changes.begin()});
+}
 
 const terminal::LineBuffer::LineRange& terminal::LineBuffer::range(std::size_t begin_pos, std::size_t end_pos) {
     line_range.move(begin_pos, end_pos);
     return line_range;
 }
 
-void terminal::LineBuffer::read_from(std::istream& stream, std::size_t count) {
+void terminal::LineBuffer::read_from(Reader& reader, std::size_t count) {
     // TODO: advance head by count?
     // TODO: implement advancing tail after exceeding max_lines
-    int c;
+    codepoint c;
+    bool style_changed = false;
+    Style style;  // maybe shold be initialized with current style?
+
+    auto dummy_line_iter = std::prev(lines.end());
+    auto dummy_style_change_iter = std::prev(style_changes.end());
+    auto active_style = std::prev(dummy_style_change_iter);
+
     std::size_t last_line_pos_before_insertion = lines.size() - 2;
-    auto dummy_line = std::prev(lines.end());
-    int width_counter = codepoints.head_pos() - std::prev(dummy_line)->first_codepoint().pos();
+    int width_counter = codepoints.head_pos() - std::prev(dummy_line_iter)->first_codepoint().pos();
 
     while (count--) {
-        c = stream.get();
+        c = reader.next_codepoint(style_changed, style);
         if (c == EOF) {
             break;
         }
-        else if (c == '\n') {
+        if (style_changed) {
+            active_style = style_changes.insert(dummy_style_change_iter, {style, codepoints.head_pos()});
+            std::cout << active_style->effective_from << std::endl;
+            style_changed = false;
+        }
+        if (c == '\n') {
             width_counter = 0;
-            lines.emplace(dummy_line, codepoints.end(), true);
-        } else {
+            lines.emplace(dummy_line_iter, true, codepoints.end(), active_style);
+        }
+        else {
             if (width_counter == width) {
                 width_counter = 0;
-                lines.emplace(dummy_line, codepoints.end(), false);
+                lines.emplace(dummy_line_iter, false, codepoints.end(), active_style);
             }
             codepoints.push(c);
             width_counter++;
         }
     }
 
-    dummy_line->first = codepoints.end();
+    dummy_line_iter->first = codepoints.end();
+    dummy_style_change_iter->effective_from = codepoints.head_pos();  // wtf
     line_range.new_lines_inserted(last_line_pos_before_insertion);
 }
 
 void terminal::LineBuffer::set_line_width(int new_width) {
     width = new_width;
 
-    auto phys_line = lines.begin();
+    auto phys_line = lines.begin();  // the first line is always physical (i.e. hard-wrapped)
     auto end = std::prev(lines.end());  // don't erase dummy line
 
     while (phys_line != end) {
@@ -154,13 +172,21 @@ void terminal::LineBuffer::set_line_width(int new_width) {
         auto next_phys_line = std::find_if(after_phys_line, end, [](Line& l){ return l.is_hard_wrapped(); });
         lines.erase(after_phys_line, next_phys_line);
 
+        // styles
+        auto active_style = phys_line->active_style();
+        auto next_style = std::next(active_style);
+
         // add new soft lines
         std::size_t first_pos = phys_line->first.pos();
         std::size_t line_width = next_phys_line->first.pos() - first_pos;
         std::size_t soft_wrap_col = 0;
         while (line_width - soft_wrap_col > width) {
             soft_wrap_col += width;
-            lines.emplace(next_phys_line, codepoints.iter(first_pos + soft_wrap_col), false);
+            std::size_t new_line_beginning = first_pos + soft_wrap_col;
+            while (next_style->effective_from <= new_line_beginning) {
+                active_style = next_style++;
+            }
+            lines.emplace(next_phys_line, false, codepoints.iter(new_line_beginning), active_style);
         }
 
         // move iterator
