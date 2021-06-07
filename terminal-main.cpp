@@ -62,11 +62,15 @@ int main() {
         else if (mouse_scroll_pos + num_lines > lb.last_line_num())
             mouse_scroll_pos = lb.last_line_num() - num_lines;
         first_line = mouse_scroll_pos;
+
+        // update line range
+        auto line_range = lb.range(first_line, first_line + num_lines);
+        renderer.set_line_range(line_range);
+
         // draw
         rl::BeginDrawing();
         rl::ClearBackground(rl::RAYWHITE);
-        auto line_range = lb.range(first_line, first_line + num_lines);
-        renderer.draw(line_range);
+        renderer.draw();
         rl::EndDrawing();
     }
 

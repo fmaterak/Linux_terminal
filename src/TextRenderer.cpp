@@ -13,6 +13,7 @@ terminal::TextRenderer::TextRenderer(rl::Rectangle viewport) {
     char_height = font_size / 2;
     char_width = fonts[0].chars['X'].advanceX / 2;
 
+    rlines = nullptr;
     set_viewport(viewport);
 }
 
@@ -22,7 +23,30 @@ void terminal::TextRenderer::set_viewport(rl::Rectangle new_viewport) {
     num_rows = viewport.height / char_height;
     origin.x = viewport.x + (viewport.width - num_cols*char_width) / 2;
     origin.y = viewport.y + (viewport.height - num_rows*char_height) / 2;
+    if (rlines) delete rlines;
+    rlines = new RenderableLine[num_rows];
 }
+
+void terminal::TextRenderer::set_line_range(terminal::LineBuffer::LineRange line_range) {
+    auto next_line_iter = line_range.begin();
+    auto last_line_iter = line_range.end();
+    int i = 0;
+
+    while (next_line_iter != last_line_iter) {
+        LineBuffer::Line* line = &(*(next_line_iter++));
+        int length = next_line_iter->first_codepoint().pos() - line->first_codepoint().pos();
+        rlines[i++] = { line, length };
+    }
+
+    while (i < num_rows) {
+        rlines[i++] = { nullptr, 0 };
+    }
+}
+
+// void terminal::TextRenderer::set_mouse_pos(rl::Vector2 mouse_pos) {
+//     hovered_col = (mouse_pos.x - origin.x) / char_width;
+//     hovered_row = (mouse_pos.y - origin.y) / char_height;
+// }
 
 rl::Vector2 terminal::TextRenderer::rowcol_to_vec(int row, int col) {
     return {
@@ -78,44 +102,32 @@ void terminal::TextRenderer::draw_styled(
     }
 }
 
-void terminal::TextRenderer::draw(terminal::LineBuffer::LineRange line_range) {
-    auto next_line_iter = line_range.begin();
-    auto last_line_iter = line_range.end();
+void terminal::TextRenderer::draw() {
+    for (int row = 0; row < num_rows; row++) {
+        const auto& rline = rlines[row];
+        if (!rline.length) {
+            continue;  // rline.line may be nullptr
+        }
 
-    auto codepoint_iter = next_line_iter->first_codepoint().resolve();
-    auto next_style_change_iter = next_line_iter->active_style();
-    auto style = next_style_change_iter->new_style;
-    next_line_iter++;
-    next_style_change_iter++;
-    bool end_reached = false;
-    int row = 0, col = 0, length;
+        const auto& line = *(rline.line);
+        auto codepoint_iter = line.first_codepoint().resolve();
+        auto next_style_change_iter = line.active_style();
+        auto style = (next_style_change_iter++)->new_style;
 
-    while (!end_reached) {
-        std::size_t next_style_change_pos, line_end = next_line_iter->first_codepoint().pos();
-        // print current line in all styles except the last one
+        std::size_t next_style_change_pos, line_end = codepoint_iter.pos() + rline.length;
+        int col = 0, length;
+
+        // draw current line in all styles except the last one
         while ((next_style_change_pos = next_style_change_iter->effective_from) < line_end) {
             length = next_style_change_pos - codepoint_iter.pos();
             draw_styled(style, codepoint_iter, row, col, length);
             col += length;
             style = (next_style_change_iter++)->new_style;
         }
-        // print the rest of the line
+
+        // draw the rest of the line
         if ((length = line_end - codepoint_iter.pos())) {
             draw_styled(style, codepoint_iter, row, col, length);
-        }
-        // if the new style starts right at the beginning of the next line, apply it (but don't use yet)
-        if (next_style_change_iter->effective_from == line_end) {
-            style = (next_style_change_iter++)->new_style;
-        }
-        // go to next line skipping empty ones
-        while (codepoint_iter == next_line_iter->first_codepoint() && !end_reached) {
-            if (next_line_iter == last_line_iter) {
-                end_reached = true;
-            } else {
-                col = 0;
-                row++;
-                next_line_iter++;
-            }
         }
     }
 }
