@@ -67,6 +67,14 @@ int main() {
         auto line_range = lb.range(first_line, first_line + num_lines);
         renderer.set_line_range(line_range);
 
+        terminal::LineBuffer::Line *line;
+        int col;
+        renderer.get_hovered_char(rl::GetMousePosition(), line, col);
+
+        if (line && rl::IsMouseButtonDown(rl::MOUSE_BUTTON_LEFT)) {
+            *(line->first_codepoint().resolve() + col) = '~';
+        }
+
         // draw
         rl::BeginDrawing();
         rl::ClearBackground(rl::RAYWHITE);

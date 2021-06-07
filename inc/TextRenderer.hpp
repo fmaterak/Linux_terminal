@@ -40,7 +40,7 @@ public:
 
     void set_viewport(rl::Rectangle new_viewport);
     void set_line_range(LineBuffer::LineRange line_range);
-    // void get_hovered_char(rl::Vector2 mouse_pos);
+    void get_hovered_char(rl::Vector2 mouse_pos, LineBuffer::Line*& line, int& col);
 
     void draw();
 
