@@ -36,6 +36,7 @@ public:
 
         Iterator& operator++();
         Iterator operator++(int);
+        Iterator operator+(std::ptrdiff_t offset) const;
 
         T* operator*();
 

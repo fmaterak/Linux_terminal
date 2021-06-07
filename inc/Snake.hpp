@@ -15,12 +15,15 @@ public:
 
         void increment();
 
+        Iterator(typename SnakeBlocks<T>::Iterator blocks_iter, std::size_t elem_idx);
+
     public:
         Iterator(SnakeBlocks<T>& blocks, std::size_t pos);
         Iterator& operator=(const Iterator&) = default;
 
         Iterator& operator++();
         Iterator operator++(int);
+        Iterator operator+(std::ptrdiff_t offset) const;
 
         T& operator*();
 

@@ -5,6 +5,10 @@ terminal::Snake<T>::Iterator::Iterator(SnakeBlocks<T>& blocks, std::size_t pos):
     blocks_iter(blocks.iter(pos / BLOCK_SIZE)), elem_idx(pos % BLOCK_SIZE) { }
 
 template<typename T>
+terminal::Snake<T>::Iterator::Iterator(typename SnakeBlocks<T>::Iterator blocks_iter, std::size_t elem_idx):
+    blocks_iter(blocks_iter), elem_idx(elem_idx) { }
+
+template<typename T>
 typename terminal::Snake<T>::Iterator& terminal::Snake<T>::Iterator::operator++() {
     increment();
     return *this;
@@ -15,6 +19,12 @@ typename terminal::Snake<T>::Iterator terminal::Snake<T>::Iterator::operator++(i
     auto tmp = *this;
     increment();
     return tmp;
+}
+
+template<typename T>
+typename terminal::Snake<T>::Iterator terminal::Snake<T>::Iterator::operator+(std::ptrdiff_t offset) const {
+    auto r = std::div(elem_idx + offset, BLOCK_SIZE);
+    return Iterator(blocks_iter + r.quot, r.rem);
 }
 
 template<typename T>

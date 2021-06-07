@@ -26,6 +26,11 @@ typename terminal::SnakeBlocks<T>::Iterator terminal::SnakeBlocks<T>::Iterator::
 }
 
 template<typename T>
+typename terminal::SnakeBlocks<T>::Iterator terminal::SnakeBlocks<T>::Iterator::operator+(std::ptrdiff_t offset) const {
+    return Iterator(*container, block_idx + offset);
+}
+
+template<typename T>
 void terminal::SnakeBlocks<T>::Iterator::increment() {
     block_idx++;
     try {
