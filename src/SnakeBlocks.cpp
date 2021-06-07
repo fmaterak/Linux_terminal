@@ -26,11 +26,6 @@ typename terminal::SnakeBlocks<T>::Iterator terminal::SnakeBlocks<T>::Iterator::
 }
 
 template<typename T>
-typename terminal::SnakeBlocks<T>::Iterator terminal::SnakeBlocks<T>::Iterator::operator+(std::ptrdiff_t offset) const {
-    return Iterator(*container, block_idx + offset);
-}
-
-template<typename T>
 void terminal::SnakeBlocks<T>::Iterator::increment() {
     block_idx++;
     try {
@@ -42,9 +37,8 @@ void terminal::SnakeBlocks<T>::Iterator::increment() {
 }
 
 template<typename T>
-typename terminal::SnakeBlocks<T>::Iterator& terminal::SnakeBlocks<T>::Iterator::resolve() {
-    block = (*container)[block_idx];
-    return *this;
+typename terminal::SnakeBlocks<T>::Iterator terminal::SnakeBlocks<T>::Iterator::operator+(std::ptrdiff_t offset) const {
+    return Iterator(*container, block_idx + offset);
 }
 
 template<typename T>
@@ -53,13 +47,9 @@ T* terminal::SnakeBlocks<T>::Iterator::operator*() {
 }
 
 template<typename T>
-bool terminal::SnakeBlocks<T>::Iterator::operator==(const Iterator& other) const {
-    return block_idx == other.block_idx;
-}
-
-template<typename T>
-bool terminal::SnakeBlocks<T>::Iterator::operator!=(const Iterator& other) const {
-    return !(*this == other);
+typename terminal::SnakeBlocks<T>::Iterator& terminal::SnakeBlocks<T>::Iterator::resolve() {
+    block = (*container)[block_idx];
+    return *this;
 }
 
 

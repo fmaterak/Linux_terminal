@@ -27,8 +27,12 @@ public:
 
         T& operator*();
 
-        bool operator==(const Iterator& other) const;
-        bool operator!=(const Iterator& other) const;
+        inline bool operator> (const Iterator& other) const { return blocks_iter > other.blocks_iter || (blocks_iter == other.blocks_iter && elem_idx >  other.elem_idx); }
+        inline bool operator< (const Iterator& other) const { return blocks_iter < other.blocks_iter || (blocks_iter == other.blocks_iter && elem_idx <  other.elem_idx); }
+        inline bool operator>=(const Iterator& other) const { return blocks_iter > other.blocks_iter || (blocks_iter == other.blocks_iter && elem_idx >= other.elem_idx); }
+        inline bool operator<=(const Iterator& other) const { return blocks_iter < other.blocks_iter || (blocks_iter == other.blocks_iter && elem_idx <= other.elem_idx); }
+        inline bool operator==(const Iterator& other) const { return blocks_iter == other.blocks_iter && elem_idx == other.elem_idx; }
+        inline bool operator!=(const Iterator& other) const { return blocks_iter != other.blocks_iter && elem_idx != other.elem_idx; }
 
         Iterator& resolve();
         std::size_t pos() const;

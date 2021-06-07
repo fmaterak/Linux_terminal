@@ -40,8 +40,12 @@ public:
 
         T* operator*();
 
-        bool operator==(const Iterator& other) const;
-        bool operator!=(const Iterator& other) const;
+        inline bool operator> (const Iterator& other) const { return block_idx >  other.block_idx; }
+        inline bool operator< (const Iterator& other) const { return block_idx <  other.block_idx; }
+        inline bool operator>=(const Iterator& other) const { return block_idx >= other.block_idx; }
+        inline bool operator<=(const Iterator& other) const { return block_idx <= other.block_idx; }
+        inline bool operator==(const Iterator& other) const { return block_idx == other.block_idx; }
+        inline bool operator!=(const Iterator& other) const { return block_idx != other.block_idx; }
 
         Iterator& resolve();
         inline std::size_t pos() const { return block_idx; }

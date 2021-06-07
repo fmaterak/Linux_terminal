@@ -22,6 +22,15 @@ typename terminal::Snake<T>::Iterator terminal::Snake<T>::Iterator::operator++(i
 }
 
 template<typename T>
+void terminal::Snake<T>::Iterator::increment() {
+    elem_idx++;
+    if (elem_idx == BLOCK_SIZE) {
+        elem_idx = 0;
+        blocks_iter++;
+    }
+}
+
+template<typename T>
 typename terminal::Snake<T>::Iterator terminal::Snake<T>::Iterator::operator+(std::ptrdiff_t offset) const {
     auto r = std::div(elem_idx + offset, BLOCK_SIZE);
     return Iterator(blocks_iter + r.quot, r.rem);
@@ -33,27 +42,8 @@ T& terminal::Snake<T>::Iterator::operator*() {
 }
 
 template<typename T>
-bool terminal::Snake<T>::Iterator::operator==(const terminal::Snake<T>::Iterator& other) const {
-    return blocks_iter == other.blocks_iter && elem_idx == other.elem_idx;
-}
-
-template<typename T>
-bool terminal::Snake<T>::Iterator::operator!=(const terminal::Snake<T>::Iterator& other) const {
-    return !(*this == other);
-}
-
-template<typename T>
 std::size_t terminal::Snake<T>::Iterator::pos() const {
     return blocks_iter.pos() * BLOCK_SIZE + elem_idx;
-}
-
-template<typename T>
-void terminal::Snake<T>::Iterator::increment() {
-    elem_idx++;
-    if (elem_idx == BLOCK_SIZE) {
-        elem_idx = 0;
-        blocks_iter++;
-    }
 }
 
 template<typename T>
