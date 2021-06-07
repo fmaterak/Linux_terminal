@@ -39,11 +39,9 @@ void terminal::LineBuffer::LineRange::move(std::size_t begin_pos, std::size_t en
         throw std::invalid_argument("end_pos");
     }
 
-    // end_pos++;
-
     struct {
         std::size_t cost;
-        LineListIter iter;
+        std::list<Line>::iterator iter;
         bool incr;
 
         void move() {
@@ -138,7 +136,6 @@ void terminal::LineBuffer::read_from(Reader& reader, std::size_t count) {
         }
         if (style_changed) {
             active_style = style_changes.insert(dummy_style_change_iter, {style, codepoints.head_pos()});
-            std::cout << active_style->effective_from << std::endl;
             style_changed = false;
         }
         if (c == '\n') {

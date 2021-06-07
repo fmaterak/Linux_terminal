@@ -1,9 +1,7 @@
 #pragma once
 
-#include <list>
-#include <climits>
-#include <iostream>
-#include <algorithm>
+#include "Snake.hpp"
+#include "Reader.hpp"
 
 namespace rl {
 	extern "C" {
@@ -11,8 +9,10 @@ namespace rl {
 	}
 }
 
-#include "Snake.hpp"
-#include "Reader.hpp"
+#include <list>
+#include <climits>
+#include <iostream>
+#include <algorithm>
 
 namespace terminal {
 
@@ -41,9 +41,6 @@ public:
         inline std::list<StyleChange>::iterator active_style() const { return style; }
     };
 
-    using LineList = std::list<Line>;
-    using LineListIter = LineList::iterator;
-
     class LineRange {
         // std::list has no quick random access, this class implements some logic to move around as quickly as possible
         // it is based on two facts:
@@ -55,7 +52,7 @@ public:
         // and start-point-choosing alghorithm is implemented (see move())
         LineBuffer& parent;
         std::size_t cached_begin_pos, cached_end_pos;
-        LineListIter cached_begin, cached_end;
+        std::list<Line>::iterator cached_begin, cached_end;
 
         void reset_cache();
         void new_lines_inserted(std::size_t after_pos);
@@ -65,15 +62,15 @@ public:
 
     public:
         LineRange(LineBuffer& parent);
-        inline LineListIter begin() const { return cached_begin; }
-        inline LineListIter end() const { return cached_end; }
+        inline std::list<Line>::iterator begin() const { return cached_begin; }
+        inline std::list<Line>::iterator end() const { return cached_end; }
     };
 
 private:
     int width;
     std::list<StyleChange> style_changes;
     Snake<codepoint> codepoints;
-    LineList lines;
+    std::list<Line> lines;
     LineRange line_range;
     std::size_t max_lines, first_line;
 
