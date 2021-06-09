@@ -1,7 +1,9 @@
 #include "Reader.hpp"
+#include "Selection.hpp"
 #include "LineBuffer.hpp"
 #include "StreamReader.hpp"
 #include "TextRenderer.hpp"
+#include "SelectionProvider.hpp"
 
 namespace rl {
     extern "C" {
@@ -36,8 +38,10 @@ int main() {
     rl::SetConfigFlags(rl::FLAG_WINDOW_RESIZABLE);
     rl::InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
 
-    // NOTE: textures and fonts must be loaded after window initialization (OpenGL context is required)
-    terminal::TextRenderer renderer({0, 0, static_cast<float>(screenWidth), static_cast<float>(screenHeight)});
+    terminal::Selection selection;
+    terminal::TextRenderer renderer(selection, {0, 0, static_cast<float>(screenWidth), static_cast<float>(screenHeight)});
+    terminal::SelectionProvider selection_provider(selection, renderer);
+
     int num_lines = renderer.temporary_get_num_lines();
     terminal::LineBuffer lb(100, renderer.temporary_get_line_width());
     if (!init_line_buffer(lb)) {
@@ -67,13 +71,7 @@ int main() {
         auto line_range = lb.range(first_line, first_line + num_lines);
         renderer.set_line_range(line_range);
 
-        terminal::LineBuffer::Line *line;
-        int col;
-        renderer.get_hovered_char(rl::GetMousePosition(), line, col);
-
-        if (line && rl::IsMouseButtonDown(rl::MOUSE_BUTTON_LEFT)) {
-            *(line->first_codepoint().resolve() + col) = '~';
-        }
+        selection_provider.update();
 
         // draw
         rl::BeginDrawing();

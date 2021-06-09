@@ -36,6 +36,7 @@ public:
             Snake<codepoint>::Iterator first_codepoint,
             std::list<StyleChange>::iterator style):
             hard_wrapped(is_hard_wrapped), first(first_codepoint), style(style) { }
+        inline bool operator==(const Line& other) { return first == other.first; }
         inline bool is_hard_wrapped() const { return hard_wrapped; }
         inline Snake<codepoint>::Iterator first_codepoint() const { return first; }
         inline std::list<StyleChange>::iterator active_style() const { return style; }

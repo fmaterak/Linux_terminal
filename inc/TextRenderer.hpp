@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Style.hpp"
+#include "Selection.hpp"
 #include "LineBuffer.hpp"
 
 namespace rl {
@@ -25,15 +26,16 @@ private:
     rl::Font fonts[4];
     rl::Rectangle viewport;
     rl::Vector2 origin;
+    const Selection& selection;
     int num_rows, num_cols;
     float char_width, char_height;
     RenderableLine *rlines;
 
     rl::Vector2 rowcol_to_vec(int row, int col);
-    void draw_styled(const Style& style, Snake<codepoint>::Iterator& codepoints, int row, int col, int length);
+    void draw_styled(const Style& style, bool selected, Snake<codepoint>::Iterator& codepoints, int row, int col, int length);
 
 public:
-    TextRenderer(rl::Rectangle viewport);
+    TextRenderer(const Selection& selection, rl::Rectangle viewport);
 
     void set_viewport(rl::Rectangle new_viewport);
     void set_line_range(LineBuffer::LineRange line_range);

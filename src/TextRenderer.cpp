@@ -1,6 +1,6 @@
 #include "TextRenderer.hpp"
 
-terminal::TextRenderer::TextRenderer(rl::Rectangle viewport) {
+terminal::TextRenderer::TextRenderer(const Selection& selection, rl::Rectangle viewport): selection(selection) {
     static constexpr int font_size = 64;
     fonts[0] = rl::LoadFontEx("resources/Roboto_Mono/static/RobotoMono-Regular.ttf", font_size, 0, 2048);
     fonts[1] = rl::LoadFontEx("resources/Roboto_Mono/static/RobotoMono-Bold.ttf", font_size, 0, 2048);
@@ -61,7 +61,7 @@ rl::Vector2 terminal::TextRenderer::rowcol_to_vec(int row, int col) {
 }
 
 void terminal::TextRenderer::draw_styled(
-    const terminal::Style& style, terminal::Snake<terminal::codepoint>::Iterator& codepoints, int row, int col, int length)
+    const terminal::Style& style, bool selected, terminal::Snake<terminal::codepoint>::Iterator& codepoints, int row, int col, int length)
 {
     // if (length <= 0) {
     //     throw std::out_of_range("terminal::TextRenderer::draw_styled(): length <= 0");
@@ -80,6 +80,14 @@ void terminal::TextRenderer::draw_styled(
     rl::Color fg = rl::BLACK;
     if (style.mask & Style::INVERTED) {
         std::swap(bg, fg);
+    }
+
+    // change bg for selected text
+    if (selected) {
+        rl::Color selection_color = rl::RED;
+        bg.r = bg.r / 2 + selection_color.r / 2;
+        bg.g = bg.g / 2 + selection_color.g / 2;
+        bg.b = bg.b / 2 + selection_color.b / 2;
     }
 
     // font
@@ -108,11 +116,16 @@ void terminal::TextRenderer::draw_styled(
 }
 
 void terminal::TextRenderer::draw() {
-    // auto sel_first_line = selection.first_line();
-    // auto sel_last_line = selection.last_line();
-    int col, length;
-    bool eol, in_selection;
     std::size_t next_style_change_pos;
+    int col, length, sel_change_length;
+    bool eol, in_selection = false, sel_available = selection.available();
+
+    if (sel_available) {
+        // if there is a selection somewhere, determine if the first visible line is selected
+        in_selection =
+            selection.first_line()->first_codepoint() < rlines[0].line->first_codepoint() &&
+            selection.last_line()->first_codepoint() >= rlines[0].line->first_codepoint();
+    }
 
     for (int row = 0; row < num_rows; row++) {
         const auto& rline = rlines[row];
@@ -126,18 +139,43 @@ void terminal::TextRenderer::draw() {
 
         col = 0;
         eol = false;
-        in_selection = false;
 
         while (!eol) {
             auto style = (next_style_change_iter++)->new_style;
             next_style_change_pos = next_style_change_iter->effective_from;
             length = next_style_change_pos - codepoint_iter.pos();
+
             if (col + length >= rline.length) {
                 length = rline.length - col;
                 eol = true;
             }
+
+            if (sel_available) {
+                if (!in_selection &&
+                    *selection.first_line() == line && selection.first_col() >= col && selection.first_col() < col + length)
+                {
+                    sel_change_length = selection.first_col() - col;
+                    if (sel_change_length > 0) {
+                        draw_styled(style, in_selection, codepoint_iter, row, col, sel_change_length);
+                        col += sel_change_length;
+                        length -= sel_change_length;
+                    }
+                    in_selection = true;
+                }
+
+                if (in_selection &&
+                    *selection.last_line() == line && selection.last_col() >= col && selection.last_col() < col + length)
+                {
+                    sel_change_length = selection.last_col() - col + 1;
+                    draw_styled(style, in_selection, codepoint_iter, row, col, sel_change_length);
+                    col += sel_change_length;
+                    length -= sel_change_length;
+                    in_selection = false;
+                }
+            }
+
             if (length > 0) {
-                draw_styled(style, codepoint_iter, row, col, length);
+                draw_styled(style, in_selection, codepoint_iter, row, col, length);
                 col += length;
             }
         }
