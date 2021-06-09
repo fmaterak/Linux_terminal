@@ -59,15 +59,15 @@ rl::Vector2 terminal::TextRenderer::rowcol_to_vec(int row, int col) {
 void terminal::TextRenderer::draw_styled(
     const terminal::Style& style, terminal::Snake<terminal::codepoint>::Iterator& codepoints, int row, int col, int length)
 {
-    if (length <= 0) {
-        throw std::out_of_range("terminal::TextRenderer::draw_styled(): length <= 0");
-    }
-    else if (col < 0 || col >= num_cols) {
-        throw std::out_of_range("terminal::TextRenderer::draw_styled(): col");
-    }
-    else if (row < 0 || row >= num_rows) {
-        throw std::out_of_range("terminal::TextRenderer::draw_styled(): row");
-    }
+    // if (length <= 0) {
+    //     throw std::out_of_range("terminal::TextRenderer::draw_styled(): length <= 0");
+    // }
+    // else if (col < 0 || col >= num_cols) {
+    //     throw std::out_of_range("terminal::TextRenderer::draw_styled(): col");
+    // }
+    // else if (row < 0 || row >= num_rows) {
+    //     throw std::out_of_range("terminal::TextRenderer::draw_styled(): row");
+    // }
 
     rl::Vector2 start = rowcol_to_vec(row, col);
 
@@ -104,6 +104,12 @@ void terminal::TextRenderer::draw_styled(
 }
 
 void terminal::TextRenderer::draw() {
+    // auto sel_first_line = selection.first_line();
+    // auto sel_last_line = selection.last_line();
+    int col, length;
+    bool eol, in_selection;
+    std::size_t next_style_change_pos;
+
     for (int row = 0; row < num_rows; row++) {
         const auto& rline = rlines[row];
         if (!rline.length) {
@@ -113,22 +119,23 @@ void terminal::TextRenderer::draw() {
         const auto& line = *(rline.line);
         auto codepoint_iter = line.first_codepoint().resolve();
         auto next_style_change_iter = line.active_style();
-        auto style = (next_style_change_iter++)->new_style;
 
-        std::size_t next_style_change_pos, line_end = codepoint_iter.pos() + rline.length;
-        int col = 0, length;
+        col = 0;
+        eol = false;
+        in_selection = false;
 
-        // draw current line in all styles except the last one
-        while ((next_style_change_pos = next_style_change_iter->effective_from) < line_end) {
+        while (!eol) {
+            auto style = (next_style_change_iter++)->new_style;
+            next_style_change_pos = next_style_change_iter->effective_from;
             length = next_style_change_pos - codepoint_iter.pos();
-            draw_styled(style, codepoint_iter, row, col, length);
-            col += length;
-            style = (next_style_change_iter++)->new_style;
-        }
-
-        // draw the rest of the line
-        if ((length = line_end - codepoint_iter.pos())) {
-            draw_styled(style, codepoint_iter, row, col, length);
+            if (col + length >= rline.length) {
+                length = rline.length - col;
+                eol = true;
+            }
+            if (length > 0) {
+                draw_styled(style, codepoint_iter, row, col, length);
+                col += length;
+            }
         }
     }
 }
