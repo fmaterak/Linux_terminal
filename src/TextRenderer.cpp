@@ -43,10 +43,14 @@ void terminal::TextRenderer::set_line_range(terminal::LineBuffer::LineRange line
     }
 }
 
-void terminal::TextRenderer::get_hovered_char(rl::Vector2 mouse_pos, terminal::LineBuffer::Line*& line, int& col) {
-    col = (mouse_pos.x - origin.x) / char_width;
+void terminal::TextRenderer::get_hovered_char(rl::Vector2 mouse_pos, terminal::LineBuffer::Line*& line, int& col) const {
     const auto& rline = rlines[static_cast<int>((mouse_pos.y - origin.y) / char_height)];
-    line = (col < rline.length) ? rline.line : nullptr;
+    line = rline.line;
+
+    col = (mouse_pos.x - origin.x) / char_width;
+    if (col >= rline.length) {
+        col = rline.length - 1;
+    }
 }
 
 rl::Vector2 terminal::TextRenderer::rowcol_to_vec(int row, int col) {

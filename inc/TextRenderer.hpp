@@ -27,9 +27,6 @@ private:
     rl::Vector2 origin;
     int num_rows, num_cols;
     float char_width, char_height;
-    int hovered_row, hovered_col;
-    // LineBuffer::Line hovered_line;
-    // Snake<codepoint>::Iterator hovered_char;
     RenderableLine *rlines;
 
     rl::Vector2 rowcol_to_vec(int row, int col);
@@ -40,7 +37,7 @@ public:
 
     void set_viewport(rl::Rectangle new_viewport);
     void set_line_range(LineBuffer::LineRange line_range);
-    void get_hovered_char(rl::Vector2 mouse_pos, LineBuffer::Line*& line, int& col);
+    void get_hovered_char(rl::Vector2 mouse_pos, LineBuffer::Line*& line, int& col) const;
 
     void draw();
 
