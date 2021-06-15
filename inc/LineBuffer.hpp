@@ -80,6 +80,7 @@ public:
 
     inline std::size_t first_line_num() const { return first_line; }
     inline std::size_t last_line_num() const { return first_line + lines.size() - 1; }
+    inline std::size_t lines_available() const { return lines.size() - 1; }
 
     const LineRange& range(std::size_t begin_pos, std::size_t end_pos);
 

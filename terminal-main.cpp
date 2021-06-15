@@ -4,6 +4,7 @@
 #include "StreamReader.hpp"
 #include "TextRenderer.hpp"
 #include "SelectionProvider.hpp"
+#include "Shell.hpp"
 
 namespace rl {
     extern "C" {
@@ -15,24 +16,24 @@ namespace rl {
 #include <iostream>
 
 #ifndef SNAKE_BLOCKS_TEST_MAIN
-bool init_line_buffer(terminal::LineBuffer& buffer) {
-    std::ifstream file;
-    file.open("display_data.txt");
-    if (!file.is_open()) {
-        std::cout << "Error opening file" << std::endl;
-        return false;
-    }
-    terminal::StreamReader reader(file);
-    buffer.read_from(reader);
-    file.close();
-    return true;
-}
+// bool init_line_buffer(terminal::LineBuffer& buffer) {
+//     std::ifstream file;
+//     file.open("display_data.txt");
+//     if (!file.is_open()) {
+//         std::cout << "Error opening file" << std::endl;
+//         return false;
+//     }
+//     terminal::StreamReader reader(file);
+//     buffer.read_from(reader);
+//     file.close();
+//     return true;
+// }
 
 int main() {
     int screenWidth = 640;
     int screenHeight = 480;
 
-    int first_line = 0;
+    std::size_t first_line = 0;
     float mouse_scroll_pos = 0.0F;
 
     rl::SetConfigFlags(rl::FLAG_WINDOW_RESIZABLE);
@@ -44,13 +45,19 @@ int main() {
 
     int num_lines = renderer.temporary_get_num_lines();
     terminal::LineBuffer lb(100, renderer.temporary_get_line_width());
-    if (!init_line_buffer(lb)) {
+
+    terminal::Shell shell;
+    if (!shell.SpawnChild()) {
+        rl::CloseWindow();
         return 1;
     }
+    std::cout << "child pid: " << shell.GetPid() << std::endl;
 
     rl::SetTargetFPS(30);
 
     while (!rl::WindowShouldClose()) {
+        lb.read_from(shell);
+
         // handle window resize
         if (rl::IsWindowResized()) {
             screenWidth = rl::GetScreenWidth();
@@ -64,11 +71,11 @@ int main() {
         if (mouse_scroll_pos < 0.0F)
             mouse_scroll_pos = 0.0F;
         else if (mouse_scroll_pos + num_lines > lb.last_line_num())
-            mouse_scroll_pos = lb.last_line_num() - num_lines;
+            mouse_scroll_pos = (lb.lines_available() > num_lines) ? lb.last_line_num() - num_lines : lb.first_line_num();
         first_line = mouse_scroll_pos;
 
         // update line range
-        auto line_range = lb.range(first_line, first_line + num_lines);
+        auto line_range = lb.range(first_line, std::min(first_line + num_lines, lb.last_line_num()));
         renderer.set_line_range(line_range);
 
         selection_provider.update();
