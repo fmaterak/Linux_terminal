@@ -26,6 +26,110 @@ static int read_int(const char* buf, const char* buf_end, int& result) {
     return num_read;
 }
 
+static terminal::codepoint read_codepoint(const char *text, int &bytesProcessed) {
+/*
+    Adapted from raylib's GetNextCodepoint()
+    UTF8 specs from https://www.ietf.org/rfc/rfc3629.txt
+
+    Char. number range  |        UTF-8 octet sequence
+       (hexadecimal)    |              (binary)
+    --------------------+---------------------------------------------
+    0000 0000-0000 007F | 0xxxxxxx
+    0000 0080-0000 07FF | 110xxxxx 10xxxxxx
+    0000 0800-0000 FFFF | 1110xxxx 10xxxxxx 10xxxxxx
+    0001 0000-0010 FFFF | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+*/
+
+    int code = '?';
+    int octet = (unsigned char)(text[0]);
+    bytesProcessed = 1;
+
+    if (octet <= 0x7f) {
+        // Only one octet (ASCII range x00-7F)
+        code = text[0];
+    }
+    else if ((octet & 0xe0) == 0xc0)
+    {
+        // Two octets
+        // [0]xC2-DF    [1]UTF8-tail(x80-BF)
+        unsigned char octet1 = text[1];
+
+        if ((octet1 == '\0') || ((octet1 >> 6) != 2)) { bytesProcessed = 2; return -1; } // Unexpected sequence
+
+        if ((octet >= 0xc2) && (octet <= 0xdf))
+        {
+            code = ((octet & 0x1f) << 6) | (octet1 & 0x3f);
+            bytesProcessed = 2;
+        }
+    }
+    else if ((octet & 0xf0) == 0xe0)
+    {
+        // Three octets
+        unsigned char octet1 = text[1];
+        unsigned char octet2 = '\0';
+
+        if ((octet1 == '\0') || ((octet1 >> 6) != 2)) { bytesProcessed = 2; return -1; } // Unexpected sequence
+
+        octet2 = text[2];
+
+        if ((octet2 == '\0') || ((octet2 >> 6) != 2)) { bytesProcessed = 3; return -1; } // Unexpected sequence
+
+        /*
+            [0]xE0    [1]xA0-BF       [2]UTF8-tail(x80-BF)
+            [0]xE1-EC [1]UTF8-tail    [2]UTF8-tail(x80-BF)
+            [0]xED    [1]x80-9F       [2]UTF8-tail(x80-BF)
+            [0]xEE-EF [1]UTF8-tail    [2]UTF8-tail(x80-BF)
+        */
+
+        if (((octet == 0xe0) && !((octet1 >= 0xa0) && (octet1 <= 0xbf))) ||
+            ((octet == 0xed) && !((octet1 >= 0x80) && (octet1 <= 0x9f)))) { bytesProcessed = 2; return -1; }
+
+        if ((octet >= 0xe0) && (0 <= 0xef))
+        {
+            code = ((octet & 0xf) << 12) | ((octet1 & 0x3f) << 6) | (octet2 & 0x3f);
+            bytesProcessed = 3;
+        }
+    }
+    else if ((octet & 0xf8) == 0xf0)
+    {
+        // Four octets
+        if (octet > 0xf4) return -1;
+
+        unsigned char octet1 = text[1];
+        unsigned char octet2 = '\0';
+        unsigned char octet3 = '\0';
+
+        if ((octet1 == '\0') || ((octet1 >> 6) != 2)) { bytesProcessed = 2; return -1; }  // Unexpected sequence
+
+        octet2 = text[2];
+
+        if ((octet2 == '\0') || ((octet2 >> 6) != 2)) { bytesProcessed = 3; return -1; }  // Unexpected sequence
+
+        octet3 = text[3];
+
+        if ((octet3 == '\0') || ((octet3 >> 6) != 2)) { bytesProcessed = 4; return -1; }  // Unexpected sequence
+
+        /*
+            [0]xF0       [1]x90-BF       [2]UTF8-tail  [3]UTF8-tail
+            [0]xF1-F3    [1]UTF8-tail    [2]UTF8-tail  [3]UTF8-tail
+            [0]xF4       [1]x80-8F       [2]UTF8-tail  [3]UTF8-tail
+        */
+
+        if (((octet == 0xf0) && !((octet1 >= 0x90) && (octet1 <= 0xbf))) ||
+            ((octet == 0xf4) && !((octet1 >= 0x80) && (octet1 <= 0x8f)))) { bytesProcessed = 2; return -1; } // Unexpected sequence
+
+        if (octet >= 0xf0)
+        {
+            code = ((octet & 0x7) << 18) | ((octet1 & 0x3f) << 12) | ((octet2 & 0x3f) << 6) | (octet3 & 0x3f);
+            bytesProcessed = 4;
+        }
+    }
+
+    if (code > 0x10ffff) code = '?';     // Codepoints after U+10ffff are invalid
+
+    return code;
+}
+
 
 terminal::Shell::Shell(): buf_end(buf), buf_ptr(buf) { }
 
@@ -236,19 +340,20 @@ terminal::codepoint terminal::Shell::next_codepoint(bool& style_changed, termina
         return EOF;
     }
 
-    codepoint c = *buf_ptr++;
-
-    if (c == '\r') {
-        if (buf_ptr == buf_end) {
-            buf_ptr--;
-            return EOF;
-        }
-        else if (*buf_ptr == '\n') {
-            return *buf_ptr++;
-        }
+    if (buf_end - buf_ptr >= 2 && buf_ptr[0] == '\r' && buf_ptr[1] == '\n') {
+        buf_ptr += 2;
+        return '\n';
     }
 
-    return c;
+    int num_read_bytes = 0;
+    codepoint c = read_codepoint(buf_ptr, num_read_bytes);
+
+    if (c == -1 || num_read_bytes > buf_end - buf_ptr) {
+        return EOF;
+    } else {
+        buf_ptr += num_read_bytes;
+        return c;
+    }
 }
 
 
