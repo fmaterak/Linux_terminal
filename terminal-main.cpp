@@ -12,9 +12,6 @@ namespace rl {
     }
 }
 
-#include <fstream>
-#include <iostream>
-
 #ifndef SNAKE_BLOCKS_TEST_MAIN
 
 int main() {
