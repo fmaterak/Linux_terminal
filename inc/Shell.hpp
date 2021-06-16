@@ -19,8 +19,7 @@ class Shell: public Reader {
     bool read_preserve();
     bool read_overwrite();
     bool read_save_tail();
-    bool require_chars_available(int num_chars);
-    bool try_read_style_change(bool& style_changed, Style& new_style);
+    int try_read_style_change(bool& style_changed, Style& new_style);
 
 public:
     Shell();
@@ -32,6 +31,7 @@ public:
     void ReaderWorker();
     void ProcessOutput(uint8_t *data, size_t size);
 
+    void write(const char* data, int nbytes);
     codepoint next_codepoint(bool& style_changed, Style& new_style);
 };
 

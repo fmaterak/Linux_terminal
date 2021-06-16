@@ -13,6 +13,20 @@
 #include "Shell.hpp"
 
 
+static int read_int(const char* buf, const char* buf_end, int& result) {
+    int num_read = 0;
+    result = 0;
+
+    while (buf < buf_end && '0' <= *buf && *buf <= '9') {
+        result = result * 10 + (*buf - '0');
+        buf++;
+        num_read++;
+    }
+
+    return num_read;
+}
+
+
 terminal::Shell::Shell(): buf_end(buf), buf_ptr(buf) { }
 
 pid_t terminal::Shell::GetPid() const {
@@ -141,6 +155,18 @@ bool terminal::Shell::read_overwrite() {
     return read_save_tail();
 }
 
+bool terminal::Shell::read_preserve() {
+    if (buf_end == buf + BUF_SIZE && buf_ptr > buf) {
+        char *tmp = buf;
+        while (buf_ptr != buf_end) {
+            *tmp++ = *buf_ptr++;
+        }
+        buf_ptr = buf;
+        buf_end = tmp;
+    }
+
+    return read_save_tail();
+}
 
 bool terminal::Shell::read_save_tail() {
     pollfd poll_files = { master_, POLLIN, 0 };
@@ -168,43 +194,30 @@ bool terminal::Shell::read_save_tail() {
     }
 }
 
+int terminal::Shell::try_read_style_change(bool& style_changed, terminal::Style& new_style) {
+    // returns EOF (-1) when there is not enough data
+    // returns 0 when no style change detected
+    // returns 1 when style change successfully parsed
 
-bool terminal::Shell::read_preserve() {
-    if (buf_end == buf + BUF_SIZE && buf_ptr > buf) {
-        char *tmp = buf;
-        while (buf_ptr != buf_end) {
-            *tmp++ = *buf_ptr++;
-        }
-        buf_ptr = buf;
-        buf_end = tmp;
+#if (EOF != -1)
+#error "EOF expected to be -1"
+#endif
+
+    char* tmp = buf_ptr;
+
+    if (tmp == buf_end) {
+        return EOF;
+    }
+    else if (*tmp++ != '\e') {
+        return 0;
     }
 
-    return read_save_tail();
-}
-
-bool terminal::Shell::require_chars_available(int num_chars) {
-    if (buf_end - buf_ptr >= num_chars) {
-        return true;
+    if (tmp == buf_end) {
+        return EOF;
     }
-
-    read_preserve();
-    return buf_end - buf_ptr >= num_chars;
-}
-
-bool terminal::Shell::try_read_style_change(bool& style_changed, terminal::Style& new_style) {
-    // returns false when there is not enough data, so that it will not be overwritten
-    // returns true when style change successfully parsed or there is no style change
-
-    if (!require_chars_available(3)) {
-        return false;
+    else if (*tmp++ != '[') {
+        return 0;
     }
-
-    if (buf_ptr[0] != '\e' || buf_ptr[1] != '[') {
-        return true;
-    }
-
-    read_preserve();
-    char* tmp = buf_ptr + 2;
 
     if (*tmp == '?') {
         tmp++;
@@ -212,36 +225,71 @@ bool terminal::Shell::try_read_style_change(bool& style_changed, terminal::Style
             char c = *tmp++;
             if (c == 'h' || c == 'l') {
                 buf_ptr = tmp;
-                return true;
+                return 1;
             }
         }
-        return false;
+        return EOF;
     }
 
-    return true;
-}
+    int read_value, num_read;
 
+    while ((num_read = read_int(tmp, buf_end, read_value))) {
+        switch (read_value) {
+
+        }
+
+        if ((tmp += num_read) == buf_end) {
+            return EOF;
+        }
+
+        if (*tmp == ';') {
+            tmp++;
+            continue;
+        }
+        else if (*tmp == 'm') {
+            buf_ptr = tmp + 1;
+            return 1;
+        }
+        else {
+            // unknown thing
+            return 0;
+        }
+    }
+
+    return 0;
+}
 
 terminal::codepoint terminal::Shell::next_codepoint(bool& style_changed, terminal::Style& new_style) {
     if (master_ == -1 || pid_  == -1) {
         return -1;
     }
 
-    if (!try_read_style_change(style_changed, new_style)) {
-        return EOF;
-    }
+    read_preserve();
 
-    if (!require_chars_available(2)) {
+    int status;
+
+    while ((status = try_read_style_change(style_changed, new_style)) == 1);
+
+    if (status == EOF || buf_ptr == buf_end) {
         return EOF;
     }
 
     codepoint c = *buf_ptr++;
 
     if (c == '\r') {
-        if (*buf_ptr == '\n') {
+        if (buf_ptr == buf_end) {
+            buf_ptr--;
+            return EOF;
+        }
+        else if (*buf_ptr == '\n') {
             return *buf_ptr++;
         }
     }
 
     return c;
+}
+
+
+void terminal::Shell::write(const char* data, int nbytes) {
+    ::write(master_, data, nbytes);
 }

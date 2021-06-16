@@ -58,6 +58,22 @@ int main() {
     while (!rl::WindowShouldClose()) {
         lb.read_from(shell);
 
+        int c, byte_len;
+
+        if ((c = rl::GetCharPressed())) {
+            const char* utf8 = rl::CodepointToUtf8(c, &byte_len);
+            // std::cout << c << ": " << utf8 << std::endl;
+            shell.write(utf8, byte_len);
+        }
+
+        if ((c = rl::GetKeyPressed())) {
+            // std::cout << c << std::endl;
+            if (c == rl::KEY_ENTER) {
+                shell.write("\n", 1);
+            }
+        }
+
+
         // handle window resize
         if (rl::IsWindowResized()) {
             screenWidth = rl::GetScreenWidth();
