@@ -12,22 +12,7 @@ namespace rl {
     }
 }
 
-#include <fstream>
-#include <iostream>
-
 #ifndef SNAKE_BLOCKS_TEST_MAIN
-// bool init_line_buffer(terminal::LineBuffer& buffer) {
-//     std::ifstream file;
-//     file.open("display_data.txt");
-//     if (!file.is_open()) {
-//         std::cout << "Error opening file" << std::endl;
-//         return false;
-//     }
-//     terminal::StreamReader reader(file);
-//     buffer.read_from(reader);
-//     file.close();
-//     return true;
-// }
 
 int main() {
     int screenWidth = 640;
@@ -37,7 +22,7 @@ int main() {
     float mouse_scroll_pos = 0.0F;
 
     rl::SetConfigFlags(rl::FLAG_WINDOW_RESIZABLE);
-    rl::InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+    rl::InitWindow(screenWidth, screenHeight, "terminal");
 
     terminal::Selection selection;
     terminal::TextRenderer renderer(selection, {0, 0, static_cast<float>(screenWidth), static_cast<float>(screenHeight)});
@@ -51,12 +36,25 @@ int main() {
         rl::CloseWindow();
         return 1;
     }
-    std::cout << "child pid: " << shell.GetPid() << std::endl;
+
+    rl::TraceLog(rl::LOG_INFO, rl::TextFormat("TERMINAL: child pid %d", shell.GetPid()));
 
     rl::SetTargetFPS(30);
 
     while (!rl::WindowShouldClose()) {
-        lb.read_from(shell);
+        // handle input
+        int c, byte_len;
+
+        if ((c = rl::GetCharPressed())) {
+            const char* utf8 = rl::CodepointToUtf8(c, &byte_len);
+            shell.write(utf8, byte_len);
+        }
+
+        if ((c = rl::GetKeyPressed())) {
+            if (c == rl::KEY_ENTER) {
+                shell.write("\n", 1);
+            }
+        }
 
         // handle window resize
         if (rl::IsWindowResized()) {
@@ -66,6 +64,7 @@ int main() {
             lb.set_line_width(renderer.temporary_get_line_width());
             num_lines = renderer.temporary_get_num_lines();
         }
+
         // update first displayed line number
         mouse_scroll_pos -= rl::GetMouseWheelMove();
         if (mouse_scroll_pos < 0.0F)
@@ -73,6 +72,19 @@ int main() {
         else if (mouse_scroll_pos + num_lines > lb.last_line_num())
             mouse_scroll_pos = (lb.lines_available() > num_lines) ? lb.last_line_num() - num_lines : lb.first_line_num();
         first_line = mouse_scroll_pos;
+
+        // autoscroll
+        bool autoscroll = lb.lines_available() < num_lines || first_line + num_lines == lb.last_line_num();
+
+        // get output
+        lb.read_from(shell);
+        if (!shell.is_connected()) {
+            break;
+        }
+
+        if (autoscroll && lb.lines_available() > num_lines) {
+            first_line = mouse_scroll_pos = lb.last_line_num() - num_lines;
+        }
 
         // update line range
         auto line_range = lb.range(first_line, std::min(first_line + num_lines, lb.last_line_num()));
@@ -91,4 +103,5 @@ int main() {
 
     return 0;
 }
+
 #endif
