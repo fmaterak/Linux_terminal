@@ -16,18 +16,6 @@ namespace rl {
 #include <iostream>
 
 #ifndef SNAKE_BLOCKS_TEST_MAIN
-// bool init_line_buffer(terminal::LineBuffer& buffer) {
-//     std::ifstream file;
-//     file.open("display_data.txt");
-//     if (!file.is_open()) {
-//         std::cout << "Error opening file" << std::endl;
-//         return false;
-//     }
-//     terminal::StreamReader reader(file);
-//     buffer.read_from(reader);
-//     file.close();
-//     return true;
-// }
 
 int main() {
     int screenWidth = 640;
@@ -56,23 +44,22 @@ int main() {
     rl::SetTargetFPS(30);
 
     while (!rl::WindowShouldClose()) {
-        lb.read_from(shell);
-
+        // handle input
         int c, byte_len;
 
         if ((c = rl::GetCharPressed())) {
             const char* utf8 = rl::CodepointToUtf8(c, &byte_len);
-            // std::cout << c << ": " << utf8 << std::endl;
             shell.write(utf8, byte_len);
         }
 
         if ((c = rl::GetKeyPressed())) {
-            // std::cout << c << std::endl;
             if (c == rl::KEY_ENTER) {
                 shell.write("\n", 1);
             }
         }
 
+        // get output
+        lb.read_from(shell);
 
         // handle window resize
         if (rl::IsWindowResized()) {
@@ -82,6 +69,7 @@ int main() {
             lb.set_line_width(renderer.temporary_get_line_width());
             num_lines = renderer.temporary_get_num_lines();
         }
+
         // update first displayed line number
         mouse_scroll_pos -= rl::GetMouseWheelMove();
         if (mouse_scroll_pos < 0.0F)
@@ -107,4 +95,5 @@ int main() {
 
     return 0;
 }
+
 #endif

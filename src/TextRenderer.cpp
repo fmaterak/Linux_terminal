@@ -1,11 +1,11 @@
 #include "TextRenderer.hpp"
 
 terminal::TextRenderer::TextRenderer(const Selection& selection, rl::Rectangle viewport): selection(selection) {
-    static constexpr int font_size = 64;
-    fonts[0] = rl::LoadFontEx("resources/Roboto_Mono/static/RobotoMono-Regular.ttf", font_size, 0, 2048);
-    fonts[1] = rl::LoadFontEx("resources/Roboto_Mono/static/RobotoMono-Bold.ttf", font_size, 0, 2048);
-    fonts[2] = rl::LoadFontEx("resources/Roboto_Mono/static/RobotoMono-Italic.ttf", font_size, 0, 2048);
-    fonts[3] = rl::LoadFontEx("resources/Roboto_Mono/static/RobotoMono-BoldItalic.ttf", font_size, 0, 2048);
+    static constexpr int font_size = 40;
+    fonts[0] = rl::LoadFontEx("resources/Roboto_Mono/static/RobotoMono-Regular.ttf", font_size, 0, 1120);
+    fonts[1] = rl::LoadFontEx("resources/Roboto_Mono/static/RobotoMono-Bold.ttf", font_size, 0, 1120);
+    fonts[2] = rl::LoadFontEx("resources/Roboto_Mono/static/RobotoMono-Italic.ttf", font_size, 0, 1120);
+    fonts[3] = rl::LoadFontEx("resources/Roboto_Mono/static/RobotoMono-BoldItalic.ttf", font_size, 0, 1120);
     rl::SetTextureFilter(fonts[0].texture, rl::TEXTURE_FILTER_BILINEAR);
     rl::SetTextureFilter(fonts[1].texture, rl::TEXTURE_FILTER_BILINEAR);
     rl::SetTextureFilter(fonts[2].texture, rl::TEXTURE_FILTER_BILINEAR);

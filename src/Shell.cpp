@@ -107,45 +107,7 @@ bool terminal::Shell::SpawnChild() {
     return true;
 }
 
-void terminal::Shell::ReaderWorker() {
-    // uint8_t buf[4096];
-
-    // pollfd fds[] = {
-    //         { master_, POLLIN | POLLPRI | POLLRDHUP | POLLERR, 0 /* ignored */ }
-    // };
-
-    // while (!end_threads_.load()) {
-
-    //     int ret = poll(fds, 1, 50 /* ms */);
-    //     if (ret == -1) {
-    //         perror("poll");
-    //         break;
-    //     }
-
-    //     if (ret == 0) {
-    //         // Timeout.
-    //         continue;
-    //     }
-
-    //     const int revents = fds[0].revents;
-
-    //     if ((revents & POLLIN)) {
-    //         ssize_t buf_read = read(master_, buf, sizeof(buf));
-    //         if (buf_read == -1) {
-    //             perror("ReaderWorker");
-    //         }
-
-    //         fwrite(buf, 1, buf_read, stdout);
-
-    //     } else {
-    //         fprintf(stderr, "poll revents == %.x\n", revents);
-    //     }
-    // }
-}
-
 void terminal::Shell::CloseMaster() {
-    end_threads_.store(true);
-    read_th_->join();
     close(master_);
     master_ = -1;
 }
