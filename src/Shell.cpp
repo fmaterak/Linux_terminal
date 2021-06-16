@@ -330,13 +330,12 @@ terminal::codepoint terminal::Shell::next_codepoint(bool& style_changed, termina
         return -1;
     }
 
-    read_preserve();
-
     int status;
 
+    read_preserve();
     while ((status = try_read_style_change(style_changed, new_style)) == 1);
 
-    if (status == EOF || buf_ptr == buf_end) {
+    if (status == EOF) {  // try_read_style_change also checks for tmp == buf_end
         return EOF;
     }
 
