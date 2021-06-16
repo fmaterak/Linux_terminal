@@ -247,7 +247,11 @@ bool terminal::Shell::read_save_tail() {
         return false;
     }
 
-    if (poll_files.revents == POLLIN) {
+    if (poll_files.revents & POLLHUP) {
+        CloseMaster();
+        return false;
+    }
+    else if (poll_files.revents & POLLIN) {
         int num_read = read(master_, buf_end, buf + BUF_SIZE - buf_end);
         if (num_read == -1) {
             throw std::runtime_error(strerror(errno));

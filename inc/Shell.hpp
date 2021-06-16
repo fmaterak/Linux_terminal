@@ -17,6 +17,8 @@ class Shell: public Reader {
 public:
     Shell();
 
+    inline bool is_connected() { return master_ != -1; }
+
     pid_t GetPid() const;
     void ResetPid();
     bool SpawnChild();

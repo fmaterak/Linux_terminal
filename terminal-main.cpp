@@ -25,7 +25,7 @@ int main() {
     float mouse_scroll_pos = 0.0F;
 
     rl::SetConfigFlags(rl::FLAG_WINDOW_RESIZABLE);
-    rl::InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+    rl::InitWindow(screenWidth, screenHeight, "terminal");
 
     terminal::Selection selection;
     terminal::TextRenderer renderer(selection, {0, 0, static_cast<float>(screenWidth), static_cast<float>(screenHeight)});
@@ -39,7 +39,8 @@ int main() {
         rl::CloseWindow();
         return 1;
     }
-    std::cout << "child pid: " << shell.GetPid() << std::endl;
+
+    rl::TraceLog(rl::LOG_INFO, rl::TextFormat("TERMINAL: child pid %d", shell.GetPid()));
 
     rl::SetTargetFPS(30);
 
@@ -58,9 +59,6 @@ int main() {
             }
         }
 
-        // get output
-        lb.read_from(shell);
-
         // handle window resize
         if (rl::IsWindowResized()) {
             screenWidth = rl::GetScreenWidth();
@@ -77,6 +75,19 @@ int main() {
         else if (mouse_scroll_pos + num_lines > lb.last_line_num())
             mouse_scroll_pos = (lb.lines_available() > num_lines) ? lb.last_line_num() - num_lines : lb.first_line_num();
         first_line = mouse_scroll_pos;
+
+        // autoscroll
+        bool autoscroll = lb.lines_available() < num_lines || first_line + num_lines == lb.last_line_num();
+
+        // get output
+        lb.read_from(shell);
+        if (!shell.is_connected()) {
+            break;
+        }
+
+        if (autoscroll && lb.lines_available() > num_lines) {
+            first_line = mouse_scroll_pos = lb.last_line_num() - num_lines;
+        }
 
         // update line range
         auto line_range = lb.range(first_line, std::min(first_line + num_lines, lb.last_line_num()));
